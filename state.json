@@ -11,18 +11,18 @@
  },
  "issues": {
   "cs2:svc:IEconItems": {
-   "alerted": false,
+   "alerted": true,
    "fp": "IEconItems: offline",
    "game": "CS2",
-   "seen_runs": 1,
-   "since": 1792614128.349307,
+   "seen_runs": 2,
+   "since": 1792617522.7113402,
    "source": "CS2 (Valve)",
    "title": "IEconItems: offline"
   }
  },
  "meta": {
   "keepalive": "2026-10-21T20:22:04.951210+00:00",
-  "x_since_id": "2112999780666220927"
+  "x_since_id": "2113009469764317320"
  },
  "seen": {
   "Activision (CoD)": [],
@@ -52,7 +52,8 @@
    "x:2112614143727431963",
    "x:2112862222502211636",
    "x:2112930722172584091",
-   "x:2112999780666220927"
+   "x:2112999780666220927",
+   "x:2113009469764317320"
   ]
  },
  "upcoming": {}
