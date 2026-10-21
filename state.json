@@ -9,17 +9,7 @@
   "TEKKEN 8": 0,
   "X / Twitter": 0
  },
- "issues": {
-  "cs2:svc:IEconItems": {
-   "alerted": true,
-   "fp": "IEconItems: offline",
-   "game": "CS2",
-   "seen_runs": 3,
-   "since": 1792617522.7113402,
-   "source": "CS2 (Valve)",
-   "title": "IEconItems: offline"
-  }
- },
+ "issues": {},
  "meta": {
   "keepalive": "2026-10-21T20:22:04.951210+00:00",
   "x_since_id": "2113009469764317320"
