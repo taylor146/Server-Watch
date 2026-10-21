@@ -79,9 +79,10 @@ TEKKEN = {"data": {"articles": [
 CS2_OK = {"result": {"services": {"SessionsLogon": "normal", "SteamCommunity": "normal"},
                      "matchmaking": {"scheduler": "normal", "online_players": 900000},
                      "datacenters": {"US Seattle": {"capacity": "full", "load": "low"}}}}
-CS2_BAD = {"result": {"services": {"SessionsLogon": "offline", "SteamCommunity": "normal"},
+CS2_BAD = {"result": {"services": {"SessionsLogon": "offline", "SteamCommunity": "normal", "IEconItems": "offline"},
                       "matchmaking": {"scheduler": "offline"},
-                      "datacenters": {"US Seattle": {"capacity": "offline", "load": "offline"}}}}
+                      "datacenters": {"US Seattle": {"capacity": "offline", "load": "offline"},
+                                      "EU Frankfurt": {"capacity": "offline", "load": "offline"}}}}
 
 STEAM = {"appnews": {"newsitems": [
     {"gid": "1", "title": "Scheduled server maintenance", "url": "https://store.steampowered.com/news/1",
@@ -217,7 +218,11 @@ class TestEngine(Base):
         monitor.run(dry=True, fetchers={"CS2 (Valve)": monitor.src_cs2}, now=self.NOW)
         self.assertEqual(self.posts, [], "one bad CS2 reading should not alert")
         monitor.run(dry=True, fetchers={"CS2 (Valve)": monitor.src_cs2}, now=self.NOW)
-        self.assertTrue(any("CS2" in t and "SessionsLogon" in t for t, _ in self.posts))
+        txt = self.texts()
+        self.assertIn("Steam / CS2 login: offline", txt)
+        self.assertIn("US Seattle", txt)
+        self.assertNotIn("Frankfurt", txt)      # non-US ignored
+        self.assertNotIn("IEconItems", txt)     # non-match-critical ignored
 
     def test_source_failure_warning(self):
         def boom():

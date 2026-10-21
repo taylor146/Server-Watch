@@ -356,25 +356,33 @@ def src_cs2() -> SourceResult:
     res = SourceResult()
     page = "https://steamstat.us/"
     bad = []
+    labels = {"SessionsLogon": "Steam / CS2 login"}
+    ignored = []
     for svc, st in (r.get("services") or {}).items():
-        if str(st).lower() not in ("normal", "idle"):
-            bad.append((f"cs2:svc:{svc}", f"{svc}: {st}", svc in ("SessionsLogon",)))
+        if str(st).lower() in ("normal", "idle"):
+            continue
+        if svc not in config.CS2_SERVICES_WATCH:
+            ignored.append(f"{svc}={st}")
+            continue
+        bad.append((f"cs2:svc:{svc}", f"{labels.get(svc, svc)}: {st}", True))
     mm = r.get("matchmaking") or {}
-    if str(mm.get("scheduler", "normal")).lower() != "normal":
-        bad.append(("cs2:mm", f"Matchmaking scheduler: {mm.get('scheduler')}", True))
+    # "surge" just means busy; only "delayed"/"offline" (or anything unknown) can stop a match.
+    if config.CS2_WATCH_MATCHMAKING and str(mm.get("scheduler", "normal")).lower() not in ("normal", "surge"):
+        bad.append(("cs2:mm", f"Game coordinator / matchmaking: {mm.get('scheduler')}", True))
     for dc, info in (r.get("datacenters") or {}).items():
         if not any(dc.startswith(p) for p in config.CS2_DATACENTER_PREFIXES):
             continue
         vals = {str(v).lower() for v in (info or {}).values()}
         if vals & {"offline", "down"}:
-            bad.append((f"cs2:dc:{dc}", f"Datacenter {dc}: {info}", True))
+            bad.append((f"cs2:dc:{dc}", f"{dc} servers offline ({', '.join(f'{k}: {v}' for k, v in info.items())})", True))
     for k, title, loud in bad:
         res.issues.append(Issue(key=k, game="CS2", title=title, url=page, loud=loud,
                                 kind="degraded" if "delayed" in title.lower() else "outage",
                                 fingerprint=title))
     res.summary = (f"scheduler={mm.get('scheduler')}, players={mm.get('online_players', '?')}, "
                    f"searching={mm.get('searching_players', '?')}, avg wait={mm.get('search_seconds_avg', '?')}s"
-                   + (f" — {len(bad)} problem(s)" if bad else ""))
+                   + (f" — {len(bad)} problem(s)" if bad else "")
+                   + (f" (ignored: {', '.join(ignored)})" if ignored else ""))
     return res
 
 

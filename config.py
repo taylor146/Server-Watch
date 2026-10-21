@@ -46,8 +46,13 @@ NBA2K_PRIORITY_COMPONENTS = [
 
 # ── CS2 (Valve) ───────────────────────────────────────────────────────────
 # Requires STEAM_API_KEY secret (free: https://steamcommunity.com/dev/apikey)
-# Datacenters whose name starts with any of these prefixes are watched.
+# Only US datacenters are watched (players are all in the US). Problems at
+# datacenters outside the US are ignored.
 CS2_DATACENTER_PREFIXES = ["US "]
+# Only these Valve services can stop a match from running, so only these alert.
+# Ignored: IEconItems (inventory/skins), Leaderboards, SteamCommunity, etc.
+CS2_SERVICES_WATCH = ["SessionsLogon"]      # Steam/CS2 login
+CS2_WATCH_MATCHMAKING = True                # CS2 game coordinator / matchmaking
 # Valve's status flaps. Require this many bad checks in a row before alerting.
 CS2_CONFIRM_RUNS = 2
 
