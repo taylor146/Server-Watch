@@ -17,10 +17,19 @@ EA_GAMES = {
 
 # ── Activision (Call of Duty) ─────────────────────────────────────────────
 # Any open incident whose game title contains one of these strings alerts.
+# (Warzone is deliberately left out: 1v1Me only plays Multiplayer.)
 COD_TITLES = [
     "Black Ops 7",
     "Modern Warfare 4",
-    "Warzone",
+]
+
+# Skip CoD incidents/posts that ONLY affect these modes. If the text also
+# mentions one of COD_KEEP_WORDS (or names no mode at all), it still alerts.
+COD_IGNORE_MODES = ["warzone", "dmz"]
+COD_KEEP_WORDS = [
+    "multiplayer", " mp ", "mp,", "all modes", "all game modes", "across modes",
+    "search and destroy", "private match", "custom game", "online services",
+    "battle.net", "login", "log in", "sign in",
 ]
 
 # ── NBA 2K (Atlassian Statuspage) ─────────────────────────────────────────

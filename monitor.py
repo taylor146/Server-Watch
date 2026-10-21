@@ -254,6 +254,14 @@ def _walk_strings(o):
             yield from _walk_strings(v)
 
 
+def cod_only_ignored_modes(text: str) -> bool:
+    """True when CoD text is only about Warzone/DMZ (not Multiplayer)."""
+    t = f" {(text or '').lower()} "
+    if not any(m in t for m in config.COD_IGNORE_MODES):
+        return False
+    return not any(k in t for k in config.COD_KEEP_WORDS)
+
+
 def src_activision() -> SourceResult:
     """Activision Online Services feed — Call of Duty."""
     url = "https://prod-psapi.infra-ext.activision.com/open/api/apexrest/oshp/landingpage"
@@ -272,6 +280,8 @@ def src_activision() -> SourceResult:
         desc = strip_html(it.get("OSHP_Event_Description__c") or "")
         platforms = (it.get("OSHP_Platform__c") or "").replace(";", ", ")
         blob = f"{name} {subject} {desc}"
+        if cod_only_ignored_modes(blob):
+            continue
         kind = "maintenance" if "mainten" in blob.lower() else "outage"
         event_id = it.get("OSHP_Event_ID__c") or it.get("Id")
         res.issues.append(Issue(
@@ -478,6 +488,8 @@ def src_x() -> SourceResult:
         user = users.get(t.get("author_id"), "?")
         game = next((g for u, g in config.X_ACCOUNTS.items() if u.lower() == user.lower()), user)
         text = t.get("text", "")
+        if game == "Call of Duty" and cod_only_ignored_modes(text):
+            continue
         posted = iso(t.get("created_at")) or datetime.now(timezone.utc)
         start, end, _ = parse_pacific_window(text, posted)
         res.announcements.append(Announcement(

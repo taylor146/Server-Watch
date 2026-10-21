@@ -228,6 +228,26 @@ class TestEngine(Base):
         monitor.run(dry=True, fetchers={"Activision (CoD)": monitor.src_activision}, now=self.NOW)
         self.assertTrue(any("reconnected" in t for t, _ in self.posts))
 
+    def test_cod_mode_filter(self):
+        f = monitor.cod_only_ignored_modes
+        self.assertTrue(f("Warzone players may experience matchmaking delays"))
+        self.assertTrue(f("We're aware of DMZ exfil issues on Modern Warfare 4"))
+        self.assertTrue(f("Warzone and DMZ servers are down for maintenance"))
+        self.assertFalse(f("Multiplayer and Warzone players unable to connect"))
+        self.assertFalse(f("Connectivity drop across listed titles"))     # no mode named -> keep
+        self.assertFalse(f("Warzone and Multiplayer login issues"))
+
+        extra = dict(ATVI)
+        extra["issuesListRO"] = ATVI["issuesListRO"] + [
+            {"Id": "WZ1", "Name": "Warzone incident", "OSHP_Game_Title__c": "Call of Duty: Black Ops 7;Call of Duty: Warzone",
+             "OSHP_Event_Subject__c": "Warzone matchmaking degraded", "OSHP_Event_Description__c": "Investigating Warzone queues.",
+             "OSHP_Platform__c": "PlayStation 5", "LastModifiedDate": "2026-10-21T18:00:00.000+0000"},
+            {"Id": "WZ2", "Name": "Warzone only", "OSHP_Game_Title__c": "Call of Duty: Warzone",
+             "OSHP_Event_Subject__c": "Login issues", "OSHP_Platform__c": "Xbox", "LastModifiedDate": "x"}]
+        with mock.patch.object(monitor, "http_json", lambda u, **k: extra):
+            titles = [i.title for i in monitor.src_activision().issues]
+        self.assertEqual(titles, ["Matchmaking issues on listed titles"])
+
     def test_x_uses_since_id(self):
         os.environ["X_BEARER_TOKEN"] = "t"
         calls = []
