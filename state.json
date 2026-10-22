@@ -9,7 +9,17 @@
   "TEKKEN 8": 0,
   "X / Twitter": 0
  },
- "issues": {},
+ "issues": {
+  "ea:madden-nfl-27": {
+   "alerted": true,
+   "fp": "Some Issues",
+   "game": "Madden NFL 27",
+   "seen_runs": 1,
+   "since": 1792660817.4215653,
+   "source": "EA (Madden/FC)",
+   "title": "EA reports: Some Issues"
+  }
+ },
  "meta": {
   "keepalive": "2026-10-21T20:22:04.951210+00:00",
   "x_since_id": "2113009469764317320"
