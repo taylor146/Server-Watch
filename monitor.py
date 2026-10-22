@@ -548,15 +548,16 @@ class Slack:
         if not dry and not self.url:
             sys.exit("SLACK_WEBHOOK_URL is not set (use --dry-run to test without Slack).")
 
-    def post(self, text: str, *, loud: bool = False, color: str = "#888888"):
+    def post(self, text: str, *, loud: bool = False, color: str = "#888888", plain: bool = False):
         if loud and self.mention:
             text = f"{self.mention} {text}"
         self.sent += 1
         if self.dry:
             print("─" * 60 + "\n" + text + "\n")
             return
-        payload = {"text": text.split("\n")[0],
-                   "attachments": [{"color": color, "mrkdwn_in": ["text"], "text": text}]}
+        payload = ({"text": text} if plain else
+                   {"text": text.split("\n")[0],
+                    "attachments": [{"color": color, "mrkdwn_in": ["text"], "text": text}]})
         for attempt in range(3):
             try:
                 req = urllib.request.Request(self.url, data=json.dumps(payload).encode(),
@@ -767,17 +768,29 @@ def print_status():
             print(f"✗ {name}: {e}")
 
 
+INTRO_MESSAGE = (
+    "*Hi team, I'm Server Watch.*\n"
+    "I keep an eye on server status for Madden, FC, NBA 2K, Call of Duty, CS2, TEKKEN 8 and "
+    "Street Fighter 6. When servers go down, come back up, or have maintenance scheduled, I post "
+    "here, with a heads-up an hour before maintenance starts, so you can plan matches around it."
+)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--test-slack", action="store_true")
     ap.add_argument("--status", action="store_true")
+    ap.add_argument("--intro", action="store_true")
     ap.add_argument("--only", nargs="*")
     a = ap.parse_args()
     if a.test_slack:
         Slack(False).post("✅ *Server Watch is connected.* Outage + maintenance alerts for "
                           "Madden, FC, NBA 2K, CoD, CS2, TEKKEN 8 and SF6 will land here.",
                           color=COLOR["resolved"])
+        return
+    if a.intro:
+        Slack(False).post(INTRO_MESSAGE, plain=True)
         return
     if a.status:
         print_status()

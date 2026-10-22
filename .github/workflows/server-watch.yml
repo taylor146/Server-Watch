@@ -9,6 +9,10 @@ on:
         description: "Only send a test message to Slack (no server checks)"
         type: boolean
         default: false
+      intro:
+        description: "Only post the bot's introduction message to Slack"
+        type: boolean
+        default: false
 
 permissions:
   contents: write               # to save state.json between runs
@@ -34,7 +38,7 @@ jobs:
           SLACK_MENTION: ${{ vars.SLACK_MENTION }}
           STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-        run: python monitor.py ${{ inputs.test_slack && '--test-slack' || '' }}
+        run: python monitor.py ${{ inputs.intro && '--intro' || '' }} ${{ inputs.test_slack && '--test-slack' || '' }}
 
       - name: Save state
         if: always()
