@@ -9,17 +9,7 @@
   "TEKKEN 8": 0,
   "X / Twitter": 0
  },
- "issues": {
-  "cs2:svc:SessionsLogon": {
-   "alerted": false,
-   "fp": "Steam / CS2 login: delayed",
-   "game": "CS2",
-   "seen_runs": 1,
-   "since": 1792710024.1792545,
-   "source": "CS2 (Valve)",
-   "title": "Steam / CS2 login: delayed"
-  }
- },
+ "issues": {},
  "meta": {
   "keepalive": "2026-10-22T16:05:49.758664+00:00",
   "x_since_id": "2113009469764317320"
