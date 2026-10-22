@@ -803,8 +803,9 @@ def print_status():
 INTRO_MESSAGE = (
     "*Hi team, I'm Server Watch.*\n"
     "I keep an eye on server status for Madden, FC, NBA 2K, Call of Duty, CS2, TEKKEN 8 and "
-    "Street Fighter 6. When servers go down, come back up, or have maintenance scheduled, I post "
-    "here, with a heads-up an hour before maintenance starts, so you can plan matches around it."
+    "Street Fighter 6. When servers go down, come back up, or maintenance gets announced, I post "
+    "here right away, then remind you ahead of maintenance (12 hours out when possible) so you can "
+    "plan matches around it."
 )
 
 
