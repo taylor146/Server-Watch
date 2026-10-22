@@ -4,6 +4,11 @@ on:
   # Triggered every 5 min by cron-job.org (more reliable than GitHub's own timer).
   # To go back to GitHub's timer, add:  schedule: [{cron: "2-59/5 * * * *"}]
   workflow_dispatch:            # "Run workflow" button for manual checks
+    inputs:
+      test_slack:
+        description: "Only send a test message to Slack (no server checks)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write               # to save state.json between runs
@@ -29,7 +34,7 @@ jobs:
           SLACK_MENTION: ${{ vars.SLACK_MENTION }}
           STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-        run: python monitor.py
+        run: python monitor.py ${{ inputs.test_slack && '--test-slack' || '' }}
 
       - name: Save state
         if: always()
