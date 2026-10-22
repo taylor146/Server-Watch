@@ -8,7 +8,7 @@ import os
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -232,6 +232,33 @@ class TestEngine(Base):
         self.assertEqual(sum("can't reach" in t for t, _ in self.posts), 1)
         monitor.run(dry=True, fetchers={"Activision (CoD)": monitor.src_activision}, now=self.NOW)
         self.assertTrue(any("reconnected" in t for t, _ in self.posts))
+
+    def test_reminder_plan(self):
+        start = datetime(2026, 10, 27, 2, 0, tzinfo=UTC)
+        h = lambda x: start - timedelta(hours=x)
+        self.assertEqual(monitor.plan_reminders(start, h(100)), [12, 1])   # days ahead
+        self.assertEqual(monitor.plan_reminders(start, h(12.5)), [6, 1])   # too close for 12h
+        self.assertEqual(monitor.plan_reminders(start, h(8)), [6, 1])
+        self.assertEqual(monitor.plan_reminders(start, h(5)), [3, 1])
+        self.assertEqual(monitor.plan_reminders(start, h(2.5)), [1])
+        self.assertEqual(monitor.plan_reminders(start, h(1.5)), [])        # announcement is the heads-up
+
+    def test_tiered_reminders_fire(self):
+        f = self._fetchers()
+        monitor.run(dry=True, fetchers=f, now=self.NOW)   # SF6 maint found days ahead
+        ann = [t for t, _ in self.posts if "PLANNED" in t and "Street Fighter 6" in t][0]
+        self.assertIn("remind you 12 hours and 1 hour before", ann)
+        sf6_start = datetime(2026, 10, 27, 2, 0, tzinfo=UTC)
+        for hrs, expect in [(13, None), (11.9, "12 hours"), (11.5, None), (6, None),
+                            (0.9, "54 min"), (0.5, None)]:
+            self.posts.clear()
+            monitor.run(dry=True, fetchers={}, now=sf6_start - timedelta(hours=hrs))
+            rem = [t for t, _ in self.posts if t.startswith("⏰") and "Street Fighter 6" in t]
+            if expect:
+                self.assertEqual(len(rem), 1, hrs)
+                self.assertIn("~" + expect if expect != "12 hours" else "Maintenance in ~", rem[0])
+            else:
+                self.assertEqual(rem, [], hrs)
 
     def test_cod_mode_filter(self):
         f = monitor.cod_only_ignored_modes

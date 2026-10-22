@@ -605,7 +605,31 @@ def fmt_issue_resolved(prev: dict, started: float) -> str:
     return f"✅ *Cleared — {prev['game']}*\n{prev['title']}\n_No longer reported (≈{dur} since first alert)._"
 
 
-def fmt_announcement(a: Announcement) -> str:
+def plan_reminders(start: datetime, now: datetime) -> list[float]:
+    """Hours-before-start at which to remind, given when we learned about it."""
+    lead_h = (start - now).total_seconds() / 3600
+    plan = []
+    for h in sorted(config.REMINDER_TIERS_HOURS, reverse=True):
+        if lead_h - h >= config.REMINDER_MIN_GAP_HOURS:
+            plan.append(h)
+            break
+    f = config.FINAL_REMINDER_HOURS
+    if f and f not in plan and lead_h - f >= config.REMINDER_MIN_GAP_HOURS:
+        plan.append(f)
+    return plan
+
+
+def fmt_lead(hours: float) -> str:
+    mins = max(int(round(hours * 60)), 1)
+    if mins == 60:
+        return "1 hour"
+    if mins < 90:
+        return f"{mins} min"
+    h = round(mins / 60, 1)
+    return f"{int(h) if h == int(h) else h} hours"
+
+
+def fmt_announcement(a: Announcement, plan: list[float] | None = None) -> str:
     head = {"maintenance": "PLANNED MAINTENANCE", "outage": "OUTAGE NOTICE", "info": "NOTICE"}[a.kind]
     s = f"{ICON.get(a.kind, 'ℹ️')} *{head} — {a.game}*\n*{a.title}*"
     if a.start:
@@ -614,6 +638,8 @@ def fmt_announcement(a: Announcement) -> str:
         s += f"\n> {a.text.replace(chr(10), chr(10) + '> ')}"
     if a.url:
         s += f"\n<{a.url}|Full notice>"
+    if plan:
+        s += "\n_I'll remind you " + " and ".join(f"{fmt_lead(h)}" for h in plan) + " before it starts._"
     return s
 
 
@@ -642,7 +668,7 @@ def run(dry: bool = False, only: list[str] | None = None, fetchers: dict | None 
     st = load_state()
     st.setdefault("issues", {})       # key -> {game,title,fp,since,source,pending}
     st.setdefault("seen", {})         # source -> [announcement keys]
-    st.setdefault("upcoming", {})     # key -> {game,title,start,end,url,reminded}
+    st.setdefault("upcoming", {})     # key -> {game,title,start,end,url,reminders}
     st.setdefault("fails", {})        # source -> consecutive failure count
     st.setdefault("meta", {})
     global CURRENT_STATE
@@ -716,13 +742,14 @@ def run(dry: bool = False, only: list[str] | None = None, fetchers: dict | None 
             if future and any(u["game"] == a.game and abs((iso(u["start"]) - a.start).total_seconds()) < 1800
                               for u in st["upcoming"].values()):
                 continue
-            slack.post(fmt_announcement(a), loud=(a.kind == "outage"),
+            plan = plan_reminders(a.start, now) if future and a.start > now else []
+            slack.post(fmt_announcement(a, plan), loud=(a.kind == "outage"),
                        color=COLOR.get(a.kind, COLOR["info"]))
             if future:
                 st["upcoming"][a.key] = {"game": a.game, "title": a.title, "url": a.url,
                                          "start": a.start.isoformat(),
                                          "end": a.end.isoformat() if a.end else None,
-                                         "reminded": False}
+                                         "reminders": plan}
         st["seen"][name] = sorted(seen)[-300:]
 
     # ── reminders before planned maintenance ──────────────────────────────
@@ -732,15 +759,20 @@ def run(dry: bool = False, only: list[str] | None = None, fetchers: dict | None 
         if not start or now > end + timedelta(hours=12):
             st["upcoming"].pop(key, None)
             continue
-        lead = (start - now).total_seconds() / 60
-        if not u["reminded"] and 0 <= lead <= config.REMINDER_MINUTES:
-            slack.post(f"⏰ *Maintenance in ~{int(lead)} min — {u['game']}*\n{u['title']}\n"
-                       f"🗓️ {slack_time(start)}" + (f" → {slack_time(end)}" if u.get('end') else "")
-                       + (f"\n<{u['url']}|Notice>" if u.get("url") else ""),
-                       loud=True, color=COLOR["maintenance"])
-            u["reminded"] = True
-        elif not u["reminded"] and lead < 0:
-            u["reminded"] = True   # missed the window (e.g. watcher was down) — don't spam late
+        if "reminders" not in u:   # entry saved by an older version
+            u["reminders"] = [] if u.pop("reminded", False) else plan_reminders(start, now)
+        lead_h = (start - now).total_seconds() / 3600
+        due = [h for h in u["reminders"] if lead_h <= h]
+        if not due:
+            continue
+        u["reminders"] = [h for h in u["reminders"] if h not in due]
+        if lead_h <= 0:
+            continue   # already started (e.g. watcher was down) — don't post late
+        # If several are due at once (watcher was down), send just one.
+        slack.post(f"⏰ *Maintenance in ~{fmt_lead(lead_h)} — {u['game']}*\n{u['title']}\n"
+                   f"🗓️ {slack_time(start)}" + (f" → {slack_time(end)}" if u.get('end') else "")
+                   + (f"\n<{u['url']}|Notice>" if u.get("url") else ""),
+                   loud=True, color=COLOR["maintenance"])
 
     # state.json is committed back to the repo only when it changes. Bump a
     # keepalive monthly so GitHub never pauses the schedule for inactivity.

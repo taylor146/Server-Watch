@@ -83,8 +83,15 @@ OUTAGE_WORDS = [
     "emergency maintenance",
 ]
 
-# Send a heads-up this many minutes before planned maintenance starts.
-REMINDER_MINUTES = 60
+# Planned maintenance is posted the moment it's found. Then ONE advance
+# reminder is sent at the earliest of these marks (hours before start) that
+# still lies ahead when it's announced: 12h if there's time, else 6h, else 3h...
+REMINDER_TIERS_HOURS = [12, 6, 3, 1]
+# A reminder must land at least this long after the announcement, so you
+# don't get the announcement and a reminder back to back.
+REMINDER_MIN_GAP_HOURS = 1
+# Also send a last-call reminder this many hours before start (None = off).
+FINAL_REMINDER_HOURS = 1
 
 # Warn in Slack when a source has failed this many checks in a row
 # (so you know the watcher itself is blind, not that servers are fine).
