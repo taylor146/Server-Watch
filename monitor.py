@@ -231,6 +231,8 @@ def src_ea() -> SourceResult:
             text = strip_html(" ".join(str(v) for v in _walk_strings(a)))
             if not has_any(text, ["madden", "fc", "fifa", "ea app", "ea sports", "maintenance", "outage"]):
                 continue
+            if ea_only_fc26(text):
+                continue
             k = "ea-alert:" + hashlib.sha1(blob.encode()).hexdigest()[:16]
             start, end, _ = parse_pacific_window(text, datetime.now(timezone.utc))
             res.announcements.append(Announcement(
@@ -241,6 +243,14 @@ def src_ea() -> SourceResult:
     except Exception:
         pass  # banner is a bonus; status feed above is what matters
     return res
+
+
+def ea_only_fc26(text: str) -> bool:
+    """True when an EA post/banner is only about FC 26 (we only care about FC 27)."""
+    t = (text or "").lower()
+    if not re.search(r"fc\W{0,3}26", t):
+        return False
+    return not re.search(r"fc\W{0,3}27|madden|ea app|all games|all ea", t)
 
 
 def _walk_strings(o):
@@ -498,6 +508,8 @@ def src_x() -> SourceResult:
         text = t.get("text", "")
         if game == "Call of Duty" and cod_only_ignored_modes(text):
             continue
+        if user.lower() == "eahelp" and ea_only_fc26(text):
+            continue
         posted = iso(t.get("created_at")) or datetime.now(timezone.utc)
         start, end, _ = parse_pacific_window(text, posted)
         res.announcements.append(Announcement(
@@ -526,7 +538,7 @@ SOURCES = {
     "Steam news": src_steam_news,
     "X / Twitter": src_x,
 }
-CONFIRM_RUNS = {"CS2 (Valve)": config.CS2_CONFIRM_RUNS}
+CONFIRM_RUNS = {"CS2 (Valve)": config.CS2_CONFIRM_RUNS, "EA (Madden/FC)": config.EA_CONFIRM_RUNS}
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -710,8 +722,9 @@ def run(dry: bool = False, only: list[str] | None = None, fetchers: dict | None 
                 prev = st["issues"][key] = {"game": i.game, "title": i.title, "fp": i.fp(),
                                             "since": time.time(), "source": name,
                                             "seen_runs": 0, "alerted": False}
-            prev["seen_runs"] = prev.get("seen_runs", 0) + 1
+            prev.pop("missing_runs", None)   # back (or still) present: not cleared
             if not prev["alerted"]:
+                prev["seen_runs"] = prev.get("seen_runs", 0) + 1
                 if prev["seen_runs"] >= confirm:
                     slack.post(fmt_issue_new(i), loud=i.loud and i.kind != "maintenance",
                                color=COLOR[i.kind])
@@ -720,8 +733,13 @@ def run(dry: bool = False, only: list[str] | None = None, fetchers: dict | None 
                 slack.post(fmt_issue_update(i), color=COLOR[i.kind])
                 prev.update(fp=i.fp(), title=i.title)
         for key in [k for k, v in st["issues"].items() if v.get("source") == name and k not in current]:
-            prev = st["issues"].pop(key)
-            if prev.get("alerted"):
+            prev = st["issues"][key]
+            if not prev.get("alerted"):
+                st["issues"].pop(key)        # a blip we never posted about
+                continue
+            prev["missing_runs"] = prev.get("missing_runs", 0) + 1
+            if prev["missing_runs"] >= config.CLEAR_CONFIRM_RUNS:
+                st["issues"].pop(key)
                 slack.post(fmt_issue_resolved(prev, prev["since"]), color=COLOR["resolved"])
 
         # ── announcements: post once ──────────────────────────────────────

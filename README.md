@@ -7,7 +7,7 @@ leagues, and when **planned maintenance** gets announced. Sends a reminder
 | Game | Where it checks | Live outages | Planned maintenance |
 |---|---|---|---|
 | Madden NFL 27 | EA server-status feed + EA banner alerts | ✅ | ✅ (when EA posts a banner) |
-| EA SPORTS FC 26 / 27 | Same EA feed | ✅ | ✅ (when EA posts a banner) |
+| EA SPORTS FC 27 | Same EA feed | ✅ | ✅ (when EA posts a banner) |
 | NBA 2K | 2K's status page (incidents, each game mode) | ✅ | ✅ with start/end times |
 | Call of Duty (BO7, MW4, Warzone) | Activision's Online Services feed | ✅ | ✅ (when posted as an event) |
 | CS2 | Valve's game-coordinator status + Steam news | ✅ | ✅ (from Steam news) |

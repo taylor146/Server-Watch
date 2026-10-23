@@ -10,7 +10,6 @@ next Call of Duty). Everything else can stay as-is.
 # Anything other than "Online" triggers an alert.
 EA_GAMES = {
     "madden-nfl-27": "Madden NFL 27",
-    "fc-26": "EA SPORTS FC 26",
     "fc-27": "EA SPORTS FC 27",
     "ea-app": "EA app (PC launcher)",
 }
@@ -92,6 +91,13 @@ REMINDER_TIERS_HOURS = [12, 6, 3, 1]
 REMINDER_MIN_GAP_HOURS = 1
 # Also send a last-call reminder this many hours before start (None = off).
 FINAL_REMINDER_HOURS = 1
+
+# Noise control. A problem must show up on this many checks in a row (5 min
+# apart) before it's posted; one-check blips are ignored.
+EA_CONFIRM_RUNS = 2
+# A problem must stay gone for this many checks in a row before "Cleared" is
+# posted. If it comes back sooner, it's treated as the same ongoing problem.
+CLEAR_CONFIRM_RUNS = 2
 
 # Warn in Slack when a source has failed this many checks in a row
 # (so you know the watcher itself is blind, not that servers are fine).

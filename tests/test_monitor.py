@@ -166,9 +166,11 @@ class TestEngine(Base):
 
     def test_first_run(self):
         monitor.run(dry=True, fetchers=self._fetchers(), now=self.NOW)
+        self.assertNotIn("Madden NFL 27", self.texts())        # EA blip: wait for 2nd check
+        monitor.run(dry=True, fetchers=self._fetchers(), now=self.NOW)
         t = self.texts()
-        print("\n\n######## FIRST RUN — Slack messages ########\n" + t)
-        self.assertIn("Madden NFL 27", t)                      # EA Some Issues
+        print("\n\n######## FIRST RUNS — Slack messages ########\n" + t)
+        self.assertIn("Madden NFL 27", t)                      # EA Some Issues, confirmed
         self.assertIn("Matchmaking issues on listed titles", t)  # CoD
         self.assertNotIn("Crash Team Racing", t)               # not a watched game
         self.assertNotIn("Test Alert", t)
@@ -191,17 +193,27 @@ class TestEngine(Base):
     def test_second_run_quiet_then_resolve_and_remind(self):
         f = self._fetchers()
         monitor.run(dry=True, fetchers=f, now=self.NOW)
+        monitor.run(dry=True, fetchers=f, now=self.NOW)
         self.posts.clear()
         monitor.run(dry=True, fetchers=f, now=self.NOW)
-        self.assertEqual(self.posts, [], "no duplicate alerts on an unchanged second run")
+        self.assertEqual(self.posts, [], "no duplicate alerts on an unchanged run")
 
-        # Madden recovers
+        # Madden flickers: clear for one check, back the next -> no posts at all
+        EA["response"]["madden-nfl-27"] = "Online"
+        monitor.run(dry=True, fetchers=f, now=self.NOW)
+        EA["response"]["madden-nfl-27"] = "Some Issues"
+        monitor.run(dry=True, fetchers=f, now=self.NOW)
+        self.assertEqual(self.posts, [], "a one-check recovery is not posted")
+
+        # Madden really recovers -> cleared after two clean checks
         EA["response"]["madden-nfl-27"] = "Online"
         try:
             monitor.run(dry=True, fetchers=f, now=self.NOW)
+            self.assertFalse(any("✅" in t for t, _ in self.posts))
+            monitor.run(dry=True, fetchers=f, now=self.NOW)
         finally:
             EA["response"]["madden-nfl-27"] = "Some Issues"
-        self.assertTrue(any("✅" in t and "Madden" in t for t, _ in self.posts))
+        self.assertEqual(sum("✅" in t and "Madden" in t for t, _ in self.posts), 1)
 
         # 45 min before SF6 maintenance (Oct 26 7pm PDT = Oct 27 02:00 UTC)
         self.posts.clear()
@@ -259,6 +271,18 @@ class TestEngine(Base):
                 self.assertIn("~" + expect if expect != "12 hours" else "Maintenance in ~", rem[0])
             else:
                 self.assertEqual(rem, [], hrs)
+
+    def test_fc26_ignored(self):
+        EA["response"]["fc-26"] = "Scheduled Maintenance"
+        try:
+            for _ in range(3):
+                monitor.run(dry=True, fetchers={"EA (Madden/FC)": monitor.src_ea}, now=self.NOW)
+        finally:
+            EA["response"]["fc-26"] = "Online"
+        self.assertNotIn("FC 26", self.texts())
+        self.assertTrue(monitor.ea_only_fc26("EA SPORTS FC 26 servers will be offline for maintenance"))
+        self.assertFalse(monitor.ea_only_fc26("FC 26 and FC 27 maintenance tonight"))
+        self.assertFalse(monitor.ea_only_fc26("Madden NFL 27 maintenance tonight"))
 
     def test_cod_mode_filter(self):
         f = monitor.cod_only_ignored_modes
