@@ -9,26 +9,7 @@
   "TEKKEN 8": 0,
   "X / Twitter": 0
  },
- "issues": {
-  "ea:fc-26": {
-   "alerted": true,
-   "fp": "Scheduled Maintenance",
-   "game": "EA SPORTS FC 26",
-   "seen_runs": 55,
-   "since": 1792735224.2136512,
-   "source": "EA (Madden/FC)",
-   "title": "EA reports: Scheduled Maintenance"
-  },
-  "ea:fc-27": {
-   "alerted": true,
-   "fp": "Scheduled Maintenance",
-   "game": "EA SPORTS FC 27",
-   "seen_runs": 55,
-   "since": 1792735224.4186313,
-   "source": "EA (Madden/FC)",
-   "title": "EA reports: Scheduled Maintenance"
-  }
- },
+ "issues": {},
  "meta": {
   "keepalive": "2026-10-22T16:05:49.758664+00:00",
   "x_since_id": "2113445085488812157"
